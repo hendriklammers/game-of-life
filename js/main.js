@@ -68,8 +68,13 @@ GOF.settings = {
 	function Cell(x, y) {
 		this.x = x;
 		this.y = y;
-		this.isAlive = Math.random() > 0.5 ? true : false;
+		this.isAlive = false;
+		this.nextState = Math.random() > 0.5 ? true : false;
 	}
+
+	Cell.prototype.switchState = function() {
+		this.isAlive = this.nextState;
+	};
 
 	Cell.prototype.update = function () {
 		// Mouse logic here?
@@ -108,8 +113,8 @@ GOF.settings = {
 				this.cells[x][y] = new GOF.Cell(x * GOF.settings.cellSize, y * GOF.settings.cellSize);
 			}
 		}
-		this.cells[8][9].isAlive = true;
-		this.cells[8][10].isAlive = true;
+		this.setNextState();
+
 	}
 
 	Grid.prototype.update = function () {
@@ -134,9 +139,11 @@ GOF.settings = {
 					result = true;
 				}
 
-				this.cells[x][y].isAlive = result;
+				this.cells[x][y].nextState = result;
 			}
 		}
+
+		this.setNextState();
 	};
 
 	Grid.prototype.getLivingNeighbors = function (x, y) {
@@ -226,6 +233,14 @@ GOF.settings = {
 			context.stroke();
 		}
 
+	};
+
+	Grid.prototype.setNextState = function() {
+		for (var x = 0; x < GOF.settings.cellsX; x++) {
+			for (var y = 0; y < GOF.settings.cellsY; y++) {
+				this.cells[x][y].switchState();
+			}
+		}
 	};
 
 	GOF.Grid = Grid;
