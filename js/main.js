@@ -55,7 +55,9 @@ var GOF = window.GOF || {};
 GOF.settings = {
 	UPDATE_RATE: 20,
 	FPS: 60,
-	cellSize: 10
+	cellSize: 10,
+	cellsX: 30,
+	cellsY: 20
 };
 
 /**
@@ -66,7 +68,7 @@ GOF.settings = {
 	function Cell(x, y) {
 		this.x = x;
 		this.y = y;
-		this.isAlive = false;
+		this.isAlive = Math.random() > 0.5 ? true : false;
 	}
 
 	Cell.prototype.update = function () {
@@ -75,9 +77,9 @@ GOF.settings = {
 
 	Cell.prototype.draw = function (context) {
 		if (this.isAlive) {
-			context.translate(this.x, this.y);
-			context.fillStyle = '#1e001a';
-			context.fillRect(0, 0, GOF.settings.cellSize);
+			// context.translate(this.x, this.y);
+			context.fillStyle = '#000000';
+			context.fillRect(this.x, this.y, GOF.settings.cellSize, GOF.settings.cellSize);
 		}
 	};
 
@@ -88,32 +90,172 @@ GOF.settings = {
 /**
  * Grid
  */
-(function() {
-	
+(function () {
+
 	function Grid() {
-		
+		var cellsX = GOF.settings.cellsX;
+		var cellsY = GOF.settings.cellsY;
+
+		// Create Two dimensional Array
+		this.cells = new Array(cellsX);
+		for (var i = 0; i < cellsX; i++) {
+			this.cells[i] = new Array(cellsY);
+		}
+
+		// Fill Array with new Cells
+		for (var x = 0; x < cellsX; x++) {
+			for (var y = 0; y < cellsY; y++) {
+				this.cells[x][y] = new GOF.Cell(x * GOF.settings.cellSize, y * GOF.settings.cellSize);
+			}
+		}
+		this.cells[8][9].isAlive = true;
+		this.cells[8][10].isAlive = true;
 	}
-	
+
+	Grid.prototype.update = function () {
+		// Loop through every cell on the grid
+		for (var x = 0; x < this.cells.length; x++) {
+			for (var y = 0; y < this.cells[x].length; y++) {
+				var living = this.cells[x][y].isAlive;
+				var count = this.getLivingNeighbors(x, y);
+				var result = false;
+
+				// Apply the rules and set the next state.
+				if (living && count < 2) {
+					result = false;
+				}
+				if (living && (count == 2 || count == 3)) {
+					result = true;
+				}
+				if (living && count > 3) {
+					result = false;
+				}
+				if (!living && count == 3) {
+					result = true;
+				}
+
+				this.cells[x][y].isAlive = result;
+			}
+		}
+	};
+
+	Grid.prototype.getLivingNeighbors = function (x, y) {
+		var count = 0;
+		var cellsX = GOF.settings.cellsX;
+		var cellsY = GOF.settings.cellsY;
+
+		// Check cell on the right.
+		if (x != cellsX - 1) {
+			if (this.cells[x + 1][y].isAlive) {
+				count++;
+			}
+		}
+		// Check cell on the bottom right.
+		if (x != cellsX - 1 && y != cellsY - 1) {
+			if (this.cells[x + 1][y + 1].isAlive) {
+				count++;
+			}
+		}
+		// Check cell on the bottom.
+		if (y != cellsY - 1) {
+			if (this.cells[x][y + 1].isAlive) {
+				count++;
+			}
+		}
+		// Check cell on the bottom left.
+		if (x !== 0 && y != cellsY - 1) {
+			if (this.cells[x - 1][y + 1].isAlive) {
+				count++;
+			}
+		}
+		// Check cell on the left.
+		if (x !== 0) {
+			if (this.cells[x - 1][y].isAlive) {
+				count++;
+			}
+		}
+		// Check cell on the top left.
+		if (x !== 0 && y !== 0) {
+			if (this.cells[x - 1][y - 1].isAlive) {
+				count++;
+			}
+		}
+		// Check cell on the top.
+		if (y !== 0) {
+			if (this.cells[x][y - 1].isAlive) {
+				count++;
+			}
+		}
+		// Check cell on the top right.
+		if (x != cellsX - 1 && y !== 0) {
+			if (this.cells[x + 1][y - 1].isAlive) {
+				count++;
+			}
+		}
+
+		return count;
+	};
+
+	Grid.prototype.draw = function (context) {
+		// Draw the cells
+		for (var x = 0; x < this.cells.length; x++) {
+			for (var y = 0; y < this.cells[x].length; y++) {
+				this.cells[x][y].draw(context);
+			}
+		}
+
+		// Draw the grid
+		context.strokeStyle = '#c8c8c8';
+		context.lineWidth = 1;
+		// Horizontal grid lines
+		for (var i = 0; i < GOF.settings.cellsY; i++) {
+			// Add 0.5 to y position to maintain crisp lines
+			var posY = (i * GOF.settings.cellSize) + 0.5;
+			context.beginPath();
+			context.moveTo(0, posY);
+			context.lineTo(GOF.settings.cellsX * GOF.settings.cellSize, posY);
+			context.stroke();
+		}
+		// Vertical grid lines
+		for (var j = 0; j < GOF.settings.cellsX; j++) {
+			// Add 0.5 to y position to maintain crisp lines
+			var posX = (j * GOF.settings.cellSize) + 0.5;
+			context.beginPath();
+			context.moveTo(posX, 0);
+			context.lineTo(posX, GOF.settings.cellsY * GOF.settings.cellSize);
+			context.stroke();
+		}
+
+	};
+
+	GOF.Grid = Grid;
+
 }());
 
 /**
- * Main
+ * Game
  */
 (function () {
 
-	function Main() {
+	function Game() {
 		this.canvas = null;
 		this.context = null;
 	}
 
-	Main.prototype.init = function () {
+	Game.prototype.init = function () {
 		this.canvas = document.getElementById('my-canvas');
 		if (this.canvas.getContext) {
 			this.context = this.canvas.getContext('2d');
 
-			// Update interval
-			// setInterval(this.update.bind(this), 1000 / GOF.settings.UPDATE_RATE);
+			// Set canvas size
+			this.canvas.width = GOF.settings.cellsX * GOF.settings.cellSize;
+			this.canvas.height = GOF.settings.cellsY * GOF.settings.cellSize;
 
+			// Grid
+			this.grid = new GOF.Grid();
+
+			// Update interval
+			setInterval(this.update.bind(this), 1000 / GOF.settings.UPDATE_RATE);
 			// render loop
 			requestAnimationFrame(this.render.bind(this));
 
@@ -122,23 +264,26 @@ GOF.settings = {
 		}
 	};
 
-	Main.prototype.update = function () {
-		console.log(this);
+	Game.prototype.update = function () {
+		this.grid.update();
 	};
 
-	Main.prototype.render = function () {
+	Game.prototype.render = function () {
 		requestAnimationFrame(this.render.bind(this));
 
-
+		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.context.save();
+		this.grid.draw(this.context);
+		this.context.restore();
 	};
 
-	GOF.Main = Main;
+	GOF.Game = Game;
 
 }());
 
 (function () {
 
-	var game = new GOF.Main();
+	var game = new GOF.Game();
 	game.init();
 
 }());
