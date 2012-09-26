@@ -81,8 +81,8 @@ GOF.settings = {
 	UPDATE_RATE: 20,
 	FPS: 60,
 	cellSize: 10,
-	cellsX: 50,
-	cellsY: 40
+	cellsX: 80,
+	cellsY: 50
 };
 
 /**
@@ -99,10 +99,6 @@ GOF.settings = {
 
 	Cell.prototype.switchState = function () {
 		this.isAlive = this.nextState;
-	};
-
-	Cell.prototype.update = function () {
-		// Mouse logic here?
 	};
 
 	Cell.prototype.draw = function (context) {
@@ -145,8 +141,8 @@ GOF.settings = {
 
 	Grid.prototype.update = function () {
 		// Loop through every cell on the grid
-		for (var x = 0; x < this.cells.length; x++) {
-			for (var y = 0; y < this.cells[x].length; y++) {
+		for (var x = 0; x < GOF.settings.cellsX; x++) {
+			for (var y = 0; y < GOF.settings.cellsY; y++) {
 				var living = this.cells[x][y].isAlive;
 				var count = this.getLivingNeighbors(x, y);
 				var result = false;
@@ -231,8 +227,8 @@ GOF.settings = {
 
 	Grid.prototype.draw = function (context) {
 		// Draw the cells
-		for (var x = 0; x < this.cells.length; x++) {
-			for (var y = 0; y < this.cells[x].length; y++) {
+		for (var x = 0; x < GOF.settings.cellsX; x++) {
+			for (var y = 0; y < GOF.settings.cellsY; y++) {
 				this.cells[x][y].draw(context);
 			}
 		}
@@ -343,8 +339,8 @@ GOF.settings = {
 
 			// Update interval
 			setInterval(this.update.bind(this), 1000 / GOF.settings.UPDATE_RATE);
-			// render loop
-			requestAnimationFrame(this.render.bind(this));
+			// Animation loop, bind scope
+			requestAnimationFrame(this.animLoop.bind(this));
 
 			this.addListeners();
 
@@ -400,7 +396,7 @@ GOF.settings = {
 			self.mouse.isDown = false;
 			self.mouse.rightButton = false;
 		};
-		
+
 		// Right mouse button
 		this.canvas.oncontextmenu = function (event) {
 			event.preventDefault();
@@ -415,8 +411,16 @@ GOF.settings = {
 		}
 	};
 
-	Game.prototype.render = function () {
-		requestAnimationFrame(this.render.bind(this));
+	Game.prototype.animLoop = function () {
+		var self = this;
+		setTimeout(function () {
+			requestAnimationFrame(self.animLoop.bind(self));
+			// Call render method
+			self.render();
+		}, 1000 / GOF.settings.FPS);
+	};
+
+	Game.prototype.render = function() {
 		// Start with a blank canvas every render cycle
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
