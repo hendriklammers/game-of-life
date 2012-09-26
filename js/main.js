@@ -60,7 +60,7 @@ if (!Function.prototype.bind) {
 			totalOffsetX += currentElement.offsetLeft;
 			totalOffsetY += currentElement.offsetTop;
 		}
-		while (currentElement = currentElement.offsetParent)
+		while ((currentElement = currentElement.offsetParent));
 
 		canvasX = event.pageX - totalOffsetX;
 		canvasY = event.pageY - totalOffsetY;
@@ -68,7 +68,7 @@ if (!Function.prototype.bind) {
 		return {
 			x: canvasX,
 			y: canvasY
-		}
+		};
 	}
 	HTMLCanvasElement.prototype.mouseCoords = mouseCoords;
 }());
@@ -97,7 +97,7 @@ GOF.settings = {
 		this.nextState = Math.random() > 0.5 ? true : false;
 	}
 
-	Cell.prototype.switchState = function() {
+	Cell.prototype.switchState = function () {
 		this.isAlive = this.nextState;
 	};
 
@@ -107,9 +107,10 @@ GOF.settings = {
 
 	Cell.prototype.draw = function (context) {
 		if (this.isAlive) {
-			// context.translate(this.x, this.y);
+			context.save();
 			context.fillStyle = '#000000';
 			context.fillRect(this.x, this.y, GOF.settings.cellSize, GOF.settings.cellSize);
+			context.restore();
 		}
 	};
 
@@ -237,6 +238,7 @@ GOF.settings = {
 		}
 
 		// Draw the grid
+		context.save();
 		context.strokeStyle = '#c8c8c8';
 		context.lineWidth = 1;
 		// Horizontal grid lines
@@ -257,10 +259,26 @@ GOF.settings = {
 			context.lineTo(posX, GOF.settings.cellsY * GOF.settings.cellSize);
 			context.stroke();
 		}
-
+		context.restore();
 	};
 
-	Grid.prototype.clear = function() {
+	Grid.prototype.selectWithMouse = function (x, y) {
+		// Get cell below the mouse
+		var col = Math.floor(x / GOF.settings.cellSize);
+		var row = Math.floor(y / GOF.settings.cellSize);
+		this.cells[col][row].isAlive = true;
+	};
+
+	Grid.prototype.randomize = function () {
+		for (var x = 0; x < GOF.settings.cellsX; x++) {
+			for (var y = 0; y < GOF.settings.cellsY; y++) {
+				this.cells[x][y].nextState = Math.random() > 0.5 ? true : false;
+			}
+		}
+		this.setNextState();
+	};
+
+	Grid.prototype.clear = function () {
 		for (var x = 0; x < GOF.settings.cellsX; x++) {
 			for (var y = 0; y < GOF.settings.cellsY; y++) {
 				this.cells[x][y].nextState = false;
@@ -269,7 +287,7 @@ GOF.settings = {
 		this.setNextState();
 	};
 
-	Grid.prototype.setNextState = function() {
+	Grid.prototype.setNextState = function () {
 		for (var x = 0; x < GOF.settings.cellsX; x++) {
 			for (var y = 0; y < GOF.settings.cellsY; y++) {
 				this.cells[x][y].switchState();
@@ -290,7 +308,11 @@ GOF.settings = {
 		this.canvas = null;
 		this.context = null;
 		this.isPaused = false;
-		this.isLeftMouseDown = false;
+		this.mouse = {
+			isDown: false,
+			x: null,
+			y: null
+		};
 	}
 
 	Game.prototype.init = function () {
@@ -317,30 +339,56 @@ GOF.settings = {
 		}
 	};
 
-	Game.prototype.addListeners = function() {
+	Game.prototype.addListeners = function () {
 		var self = this;
-		document.onkeypress = function(event) {
-			if(event.keyCode == 32) {
-				self.isPaused = !self.isPaused;
-			}
-			if(event.keyCode == 13) {
-				self.grid.clear();
+
+		document.getElementById('pause-button').onclick = function (event) {
+			event.preventDefault();
+			if (!self.isPaused) {
+				self.isPaused = true;
+				this.innerHTML = 'Resume';
+			} else {
+				self.isPaused = false;
+				this.innerHTML = 'Pause';
 			}
 		};
-		// Left mouse button
-		this.canvas.onmousedown = function(event) {
-			self.isLeftMouseDown = true;
-		}
-		document.onmouseup = function(event) {
-			self.isLeftMouseDown = false;
-		}
-		// Right mouse button
-		this.canvas.oncontextmenu = function(event) {
+		document.getElementById('clear-button').onclick = function (event) {
 			event.preventDefault();
-		}
+			self.grid.clear();
+			self.isPaused = true;
+			document.getElementById('pause-button').innerHTML = 'Start';
+		};
+		document.getElementById('randomize-button').onclick = function (event) {
+			event.preventDefault();
+			self.grid.randomize();
+		};
+		// Left mouse button
+		this.canvas.onmousedown = function (event) {
+			self.mouse = {
+				isDown: true,
+				x: this.mouseCoords(event).x,
+				y: this.mouseCoords(event).y
+			};
+		};
+		this.canvas.onmousemove = function (event) {
+			self.mouse.x = this.mouseCoords(event).x;
+			self.mouse.y = this.mouseCoords(event).y;
+		};
+		document.onmouseup = function (event) {
+			self.mouse.isDown = false;
+		};
+		// Right mouse button
+		this.canvas.oncontextmenu = function (event) {
+			event.preventDefault();
+		};
 	};
 
 	Game.prototype.update = function () {
+
+		if (this.mouse.isDown) {
+			this.grid.selectWithMouse(this.mouse.x, this.mouse.y);
+		}
+
 		if (this.isPaused) {
 			return;
 		}
@@ -350,23 +398,21 @@ GOF.settings = {
 
 	Game.prototype.render = function () {
 		requestAnimationFrame(this.render.bind(this));
-
+		// Start with a blank canvas every render cycle
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-		// Show Pause
+		// Show Pause in the background
 		if (this.isPaused) {
-			this.context.fillStyle = '#b8030f';
-			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+			this.context.save();
 			this.context.font = 'bold 76px Arial';
 			this.context.textAlign = 'center';
 			this.context.textBaseline = 'middle';
-			this.context.fillStyle = '#ffffff';
+			this.context.fillStyle = '#ababab';
 			this.context.fillText('PAUSED', this.canvas.width / 2, this.canvas.height / 2);
+			this.context.restore();
 		}
-
-		this.context.save();
+		// Draw the grid
 		this.grid.draw(this.context);
-		this.context.restore();
 	};
 
 	GOF.Game = Game;
