@@ -242,18 +242,20 @@ GOF.settings = {
 		context.strokeStyle = '#c8c8c8';
 		context.lineWidth = 1;
 		// Horizontal grid lines
-		for (var i = 0; i < GOF.settings.cellsY; i++) {
+		// Skip the first line
+		for (var i = 0; i < GOF.settings.cellsY - 1; i++) {
 			// Add 0.5 to y position to maintain crisp lines
-			var posY = (i * GOF.settings.cellSize) + 0.5;
+			var posY = (i * GOF.settings.cellSize) + 0.5 + GOF.settings.cellSize;
 			context.beginPath();
 			context.moveTo(0, posY);
 			context.lineTo(GOF.settings.cellsX * GOF.settings.cellSize, posY);
 			context.stroke();
 		}
 		// Vertical grid lines
-		for (var j = 0; j < GOF.settings.cellsX; j++) {
+		// Skip the first line
+		for (var j = 0; j < GOF.settings.cellsX - 1; j++) {
 			// Add 0.5 to y position to maintain crisp lines
-			var posX = (j * GOF.settings.cellSize) + 0.5;
+			var posX = (j * GOF.settings.cellSize) + 0.5 + GOF.settings.cellSize;
 			context.beginPath();
 			context.moveTo(posX, 0);
 			context.lineTo(posX, GOF.settings.cellsY * GOF.settings.cellSize);
@@ -262,11 +264,22 @@ GOF.settings = {
 		context.restore();
 	};
 
-	Grid.prototype.selectWithMouse = function (x, y) {
+	Grid.prototype.selectWithMouse = function (x, y, state) {
 		// Get cell below the mouse
 		var col = Math.floor(x / GOF.settings.cellSize);
 		var row = Math.floor(y / GOF.settings.cellSize);
-		this.cells[col][row].isAlive = true;
+		// Safety check to see if collumn and row are within range
+		if (col >= 0 && col < GOF.settings.cellsX) {
+			if (row >= 0 && row < GOF.settings.cellsY) {
+				// Set dead or alive
+				var cell = this.cells[col][row];
+				if (state == 'alive') {
+					cell.isAlive = true;
+				} else {
+					cell.isAlive = false;
+				}
+			}
+		}
 	};
 
 	Grid.prototype.randomize = function () {
@@ -311,7 +324,8 @@ GOF.settings = {
 		this.mouse = {
 			isDown: false,
 			x: null,
-			y: null
+			y: null,
+			rightButton: false
 		};
 	}
 
@@ -342,6 +356,7 @@ GOF.settings = {
 	Game.prototype.addListeners = function () {
 		var self = this;
 
+		// Pause button
 		document.getElementById('pause-button').onclick = function (event) {
 			event.preventDefault();
 			if (!self.isPaused) {
@@ -352,16 +367,19 @@ GOF.settings = {
 				this.innerHTML = 'Pause';
 			}
 		};
+
+		// Clear button
 		document.getElementById('clear-button').onclick = function (event) {
 			event.preventDefault();
 			self.grid.clear();
-			self.isPaused = true;
-			document.getElementById('pause-button').innerHTML = 'Start';
 		};
+
+		// Randomize button
 		document.getElementById('randomize-button').onclick = function (event) {
 			event.preventDefault();
 			self.grid.randomize();
 		};
+
 		// Left mouse button
 		this.canvas.onmousedown = function (event) {
 			self.mouse = {
@@ -370,30 +388,31 @@ GOF.settings = {
 				y: this.mouseCoords(event).y
 			};
 		};
+
+		// When mouse is moved
 		this.canvas.onmousemove = function (event) {
 			self.mouse.x = this.mouseCoords(event).x;
 			self.mouse.y = this.mouseCoords(event).y;
 		};
+
+		// Mouse button released
 		document.onmouseup = function (event) {
 			self.mouse.isDown = false;
+			self.mouse.rightButton = false;
 		};
+		
 		// Right mouse button
 		this.canvas.oncontextmenu = function (event) {
 			event.preventDefault();
+			self.mouse.rightButton = true;
 		};
 	};
 
 	Game.prototype.update = function () {
-
-		if (this.mouse.isDown) {
-			this.grid.selectWithMouse(this.mouse.x, this.mouse.y);
+		// Only update when game isn't paused
+		if (!this.isPaused) {
+			this.grid.update();
 		}
-
-		if (this.isPaused) {
-			return;
-		}
-
-		this.grid.update();
 	};
 
 	Game.prototype.render = function () {
@@ -407,10 +426,20 @@ GOF.settings = {
 			this.context.font = 'bold 76px Arial';
 			this.context.textAlign = 'center';
 			this.context.textBaseline = 'middle';
-			this.context.fillStyle = '#ababab';
+			this.context.fillStyle = '#ff5569';
 			this.context.fillText('PAUSED', this.canvas.width / 2, this.canvas.height / 2);
 			this.context.restore();
 		}
+
+		// Check is the mousebutton is pressed and call method on the grid object
+		if (this.mouse.isDown) {
+			if (this.mouse.rightButton) {
+				this.grid.selectWithMouse(this.mouse.x, this.mouse.y, 'death');
+			} else {
+				this.grid.selectWithMouse(this.mouse.x, this.mouse.y, 'alive');
+			}
+		}
+
 		// Draw the grid
 		this.grid.draw(this.context);
 	};
@@ -420,7 +449,7 @@ GOF.settings = {
 }());
 
 (function () {
-
+	// Create an instance of the game
 	var game = new GOF.Game();
 	game.init();
 
