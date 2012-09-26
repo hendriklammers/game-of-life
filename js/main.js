@@ -47,6 +47,31 @@ if (!Function.prototype.bind) {
 	};
 }
 
+// Add mouse coordinates on the Canvas element
+(function () {
+	function mouseCoords(event) {
+		var totalOffsetX = 0;
+		var totalOffsetY = 0;
+		var canvasX = 0;
+		var canvasY = 0;
+		var currentElement = this;
+
+		do {
+			totalOffsetX += currentElement.offsetLeft;
+			totalOffsetY += currentElement.offsetTop;
+		}
+		while (currentElement = currentElement.offsetParent)
+
+		canvasX = event.pageX - totalOffsetX;
+		canvasY = event.pageY - totalOffsetY;
+
+		return {
+			x: canvasX,
+			y: canvasY
+		}
+	}
+	HTMLCanvasElement.prototype.mouseCoords = mouseCoords;
+}());
 
 // Namespace
 var GOF = window.GOF || {};
@@ -56,8 +81,8 @@ GOF.settings = {
 	UPDATE_RATE: 20,
 	FPS: 60,
 	cellSize: 10,
-	cellsX: 30,
-	cellsY: 20
+	cellsX: 50,
+	cellsY: 40
 };
 
 /**
@@ -235,6 +260,15 @@ GOF.settings = {
 
 	};
 
+	Grid.prototype.clear = function() {
+		for (var x = 0; x < GOF.settings.cellsX; x++) {
+			for (var y = 0; y < GOF.settings.cellsY; y++) {
+				this.cells[x][y].nextState = false;
+			}
+		}
+		this.setNextState();
+	};
+
 	Grid.prototype.setNextState = function() {
 		for (var x = 0; x < GOF.settings.cellsX; x++) {
 			for (var y = 0; y < GOF.settings.cellsY; y++) {
@@ -255,6 +289,8 @@ GOF.settings = {
 	function Game() {
 		this.canvas = null;
 		this.context = null;
+		this.isPaused = false;
+		this.isLeftMouseDown = false;
 	}
 
 	Game.prototype.init = function () {
@@ -266,7 +302,7 @@ GOF.settings = {
 			this.canvas.width = GOF.settings.cellsX * GOF.settings.cellSize;
 			this.canvas.height = GOF.settings.cellsY * GOF.settings.cellSize;
 
-			// Grid
+			// Create Grid
 			this.grid = new GOF.Grid();
 
 			// Update interval
@@ -274,12 +310,41 @@ GOF.settings = {
 			// render loop
 			requestAnimationFrame(this.render.bind(this));
 
+			this.addListeners();
+
 		} else {
 			alert('You need a modern browser to view this');
 		}
 	};
 
+	Game.prototype.addListeners = function() {
+		var self = this;
+		document.onkeypress = function(event) {
+			if(event.keyCode == 32) {
+				self.isPaused = !self.isPaused;
+			}
+			if(event.keyCode == 13) {
+				self.grid.clear();
+			}
+		};
+		// Left mouse button
+		this.canvas.onmousedown = function(event) {
+			self.isLeftMouseDown = true;
+		}
+		document.onmouseup = function(event) {
+			self.isLeftMouseDown = false;
+		}
+		// Right mouse button
+		this.canvas.oncontextmenu = function(event) {
+			event.preventDefault();
+		}
+	};
+
 	Game.prototype.update = function () {
+		if (this.isPaused) {
+			return;
+		}
+
 		this.grid.update();
 	};
 
@@ -287,6 +352,18 @@ GOF.settings = {
 		requestAnimationFrame(this.render.bind(this));
 
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+		// Show Pause
+		if (this.isPaused) {
+			this.context.fillStyle = '#b8030f';
+			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+			this.context.font = 'bold 76px Arial';
+			this.context.textAlign = 'center';
+			this.context.textBaseline = 'middle';
+			this.context.fillStyle = '#ffffff';
+			this.context.fillText('PAUSED', this.canvas.width / 2, this.canvas.height / 2);
+		}
+
 		this.context.save();
 		this.grid.draw(this.context);
 		this.context.restore();
