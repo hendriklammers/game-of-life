@@ -74,10 +74,10 @@ if (!Function.prototype.bind) {
 }());
 
 // Namespace
-var GOF = window.GOF || {};
+var GameOfLife = window.GameOfLife || {};
 
 // Settings
-GOF.settings = {
+GameOfLife.settings = {
 	UPDATE_RATE: 20,
 	FPS: 60,
 	cellSize: 10,
@@ -105,12 +105,12 @@ GOF.settings = {
 		if (this.isAlive) {
 			context.save();
 			context.fillStyle = '#000000';
-			context.fillRect(this.x, this.y, GOF.settings.cellSize, GOF.settings.cellSize);
+			context.fillRect(this.x, this.y, GameOfLife.settings.cellSize, GameOfLife.settings.cellSize);
 			context.restore();
 		}
 	};
 
-	GOF.Cell = Cell;
+	GameOfLife.Cell = Cell;
 
 }());
 
@@ -120,8 +120,8 @@ GOF.settings = {
 (function () {
 
 	function Grid() {
-		var cellsX = GOF.settings.cellsX;
-		var cellsY = GOF.settings.cellsY;
+		var cellsX = GameOfLife.settings.cellsX;
+		var cellsY = GameOfLife.settings.cellsY;
 
 		// Create Two dimensional Array
 		this.cells = new Array(cellsX);
@@ -132,7 +132,7 @@ GOF.settings = {
 		// Fill Array with new Cells
 		for (var x = 0; x < cellsX; x++) {
 			for (var y = 0; y < cellsY; y++) {
-				this.cells[x][y] = new GOF.Cell(x * GOF.settings.cellSize, y * GOF.settings.cellSize);
+				this.cells[x][y] = new GameOfLife.Cell(x * GameOfLife.settings.cellSize, y * GameOfLife.settings.cellSize);
 			}
 		}
 		this.setNextState();
@@ -141,8 +141,8 @@ GOF.settings = {
 
 	Grid.prototype.update = function () {
 		// Loop through every cell on the grid
-		for (var x = 0; x < GOF.settings.cellsX; x++) {
-			for (var y = 0; y < GOF.settings.cellsY; y++) {
+		for (var x = 0; x < GameOfLife.settings.cellsX; x++) {
+			for (var y = 0; y < GameOfLife.settings.cellsY; y++) {
 				var living = this.cells[x][y].isAlive;
 				var count = this.getLivingNeighbors(x, y);
 				var result = false;
@@ -170,8 +170,8 @@ GOF.settings = {
 
 	Grid.prototype.getLivingNeighbors = function (x, y) {
 		var count = 0;
-		var cellsX = GOF.settings.cellsX;
-		var cellsY = GOF.settings.cellsY;
+		var cellsX = GameOfLife.settings.cellsX;
+		var cellsY = GameOfLife.settings.cellsY;
 
 		// Check cell on the right.
 		if (x != cellsX - 1) {
@@ -227,8 +227,8 @@ GOF.settings = {
 
 	Grid.prototype.draw = function (context) {
 		// Draw the cells
-		for (var x = 0; x < GOF.settings.cellsX; x++) {
-			for (var y = 0; y < GOF.settings.cellsY; y++) {
+		for (var x = 0; x < GameOfLife.settings.cellsX; x++) {
+			for (var y = 0; y < GameOfLife.settings.cellsY; y++) {
 				this.cells[x][y].draw(context);
 			}
 		}
@@ -239,22 +239,22 @@ GOF.settings = {
 		context.lineWidth = 1;
 		// Horizontal grid lines
 		// Skip the first line
-		for (var i = 0; i < GOF.settings.cellsY - 1; i++) {
+		for (var i = 0; i < GameOfLife.settings.cellsY - 1; i++) {
 			// Add 0.5 to y position to maintain crisp lines
-			var posY = (i * GOF.settings.cellSize) + 0.5 + GOF.settings.cellSize;
+			var posY = (i * GameOfLife.settings.cellSize) + 0.5 + GameOfLife.settings.cellSize;
 			context.beginPath();
 			context.moveTo(0, posY);
-			context.lineTo(GOF.settings.cellsX * GOF.settings.cellSize, posY);
+			context.lineTo(GameOfLife.settings.cellsX * GameOfLife.settings.cellSize, posY);
 			context.stroke();
 		}
 		// Vertical grid lines
 		// Skip the first line
-		for (var j = 0; j < GOF.settings.cellsX - 1; j++) {
+		for (var j = 0; j < GameOfLife.settings.cellsX - 1; j++) {
 			// Add 0.5 to y position to maintain crisp lines
-			var posX = (j * GOF.settings.cellSize) + 0.5 + GOF.settings.cellSize;
+			var posX = (j * GameOfLife.settings.cellSize) + 0.5 + GameOfLife.settings.cellSize;
 			context.beginPath();
 			context.moveTo(posX, 0);
-			context.lineTo(posX, GOF.settings.cellsY * GOF.settings.cellSize);
+			context.lineTo(posX, GameOfLife.settings.cellsY * GameOfLife.settings.cellSize);
 			context.stroke();
 		}
 		context.restore();
@@ -262,11 +262,11 @@ GOF.settings = {
 
 	Grid.prototype.selectWithMouse = function (x, y, state) {
 		// Get cell below the mouse
-		var col = Math.floor(x / GOF.settings.cellSize);
-		var row = Math.floor(y / GOF.settings.cellSize);
+		var col = Math.floor(x / GameOfLife.settings.cellSize);
+		var row = Math.floor(y / GameOfLife.settings.cellSize);
 		// Safety check to see if collumn and row are within range
-		if (col >= 0 && col < GOF.settings.cellsX) {
-			if (row >= 0 && row < GOF.settings.cellsY) {
+		if (col >= 0 && col < GameOfLife.settings.cellsX) {
+			if (row >= 0 && row < GameOfLife.settings.cellsY) {
 				// Set dead or alive
 				var cell = this.cells[col][row];
 				if (state == 'alive') {
@@ -279,8 +279,8 @@ GOF.settings = {
 	};
 
 	Grid.prototype.randomize = function () {
-		for (var x = 0; x < GOF.settings.cellsX; x++) {
-			for (var y = 0; y < GOF.settings.cellsY; y++) {
+		for (var x = 0; x < GameOfLife.settings.cellsX; x++) {
+			for (var y = 0; y < GameOfLife.settings.cellsY; y++) {
 				this.cells[x][y].nextState = Math.random() > 0.5 ? true : false;
 			}
 		}
@@ -288,8 +288,8 @@ GOF.settings = {
 	};
 
 	Grid.prototype.clear = function () {
-		for (var x = 0; x < GOF.settings.cellsX; x++) {
-			for (var y = 0; y < GOF.settings.cellsY; y++) {
+		for (var x = 0; x < GameOfLife.settings.cellsX; x++) {
+			for (var y = 0; y < GameOfLife.settings.cellsY; y++) {
 				this.cells[x][y].nextState = false;
 			}
 		}
@@ -297,14 +297,14 @@ GOF.settings = {
 	};
 
 	Grid.prototype.setNextState = function () {
-		for (var x = 0; x < GOF.settings.cellsX; x++) {
-			for (var y = 0; y < GOF.settings.cellsY; y++) {
+		for (var x = 0; x < GameOfLife.settings.cellsX; x++) {
+			for (var y = 0; y < GameOfLife.settings.cellsY; y++) {
 				this.cells[x][y].switchState();
 			}
 		}
 	};
 
-	GOF.Grid = Grid;
+	GameOfLife.Grid = Grid;
 
 }());
 
@@ -331,14 +331,14 @@ GOF.settings = {
 			this.context = this.canvas.getContext('2d');
 
 			// Set canvas size
-			this.canvas.width = GOF.settings.cellsX * GOF.settings.cellSize;
-			this.canvas.height = GOF.settings.cellsY * GOF.settings.cellSize;
+			this.canvas.width = GameOfLife.settings.cellsX * GameOfLife.settings.cellSize;
+			this.canvas.height = GameOfLife.settings.cellsY * GameOfLife.settings.cellSize;
 
 			// Create Grid
-			this.grid = new GOF.Grid();
+			this.grid = new GameOfLife.Grid();
 
 			// Update interval
-			setInterval(this.update.bind(this), 1000 / GOF.settings.UPDATE_RATE);
+			setInterval(this.update.bind(this), 1000 / GameOfLife.settings.UPDATE_RATE);
 			// Animation loop, bind scope
 			requestAnimationFrame(this.animLoop.bind(this));
 
@@ -417,7 +417,7 @@ GOF.settings = {
 			requestAnimationFrame(self.animLoop.bind(self));
 			// Call render method
 			self.render();
-		}, 1000 / GOF.settings.FPS);
+		}, 1000 / GameOfLife.settings.FPS);
 	};
 
 	Game.prototype.render = function() {
@@ -448,13 +448,13 @@ GOF.settings = {
 		this.grid.draw(this.context);
 	};
 
-	GOF.Game = Game;
+	GameOfLife.Game = Game;
 
 }());
 
 (function () {
 	// Create an instance of the game
-	var game = new GOF.Game();
+	var game = new GameOfLife.Game();
 	game.init();
 
 }());
